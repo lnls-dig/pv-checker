@@ -87,13 +87,10 @@ def process_pvchk_file(filename):
 
 if __name__ == "__main__":
     if len(sys.argv) != 2:
-        print("Usage: python pv_checker.py <filename.pvchk>")
+        print("Usage: python pv_checker.py <filename>")
         sys.exit(1)
 
     filename = sys.argv[1]
-    if not filename.endswith(".pvchk"):
-        print("Error: File must have a .pvchk extension.")
-        sys.exit(1)
 
     results = process_pvchk_file(filename)
     print(f"{'PV Name':<50} {'Result':<10} {'Actual':<20} {'Expected':<20}")

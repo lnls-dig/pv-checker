@@ -39,13 +39,27 @@ def check_pv_condition(pv_name, operator, expected_value):
         return "Error", None, f"{operator} {expected_value}"
 
     try:
-        condition_met = eval(
-            f"{repr(pv_value)} {operator} {repr(expected_value)}")
+        if operator == "==":
+            condition_met = pv_value == expected_value
+        elif operator == "!=":
+            condition_met = pv_value != expected_value
+        elif operator == "<":
+            condition_met = pv_value < expected_value
+        elif operator == "<=":
+            condition_met = pv_value <= expected_value
+        elif operator == ">":
+            condition_met = pv_value > expected_value
+        elif operator == ">=":
+            condition_met = pv_value >= expected_value
+        else:
+            raise ValueError(f"Unknown operator: {operator}")
+
         if condition_met:
             result = f"{GREEN}Pass{RESET}"
         else:
             result = f"{RED}Fail{RESET}"
         return result, pv_value, f"{operator} {expected_value}"
+
     except Exception as e:
         return f"Error: {e}", pv_value, f"{operator} {expected_value}"
 

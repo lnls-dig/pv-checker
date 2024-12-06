@@ -4,10 +4,24 @@ import re
 import sys
 from epics import caget
 from braceexpand import braceexpand
+import operator
+
+
+# Map of operators and dynamic regex creation
+OPERATORS = {
+    "==": operator.eq,
+    "!=": operator.ne,
+    "<": operator.lt,
+    "<=": operator.le,
+    ">": operator.gt,
+    ">=": operator.ge,
+}
+
+OPERATORS_PATTERN = "|".join(re.escape(op) for op in OPERATORS.keys())
 
 
 def parse_condition(line):
-    match = re.match(r"(.+?)\s*(==|>=|<=|!=|>|<)\s*(.+)", line)
+    match = re.match(rf"(.+?)\s*({OPERATORS_PATTERN})\s*(.+)", line)
     if not match:
         raise ValueError(f"Invalid syntax: {line}")
     pv_pattern, operator, value = match.groups()
@@ -33,31 +47,20 @@ def check_pv_condition(pv_name, operator, expected_value):
     RED = "\033[91m"
     RESET = "\033[0m"
 
+    # Resolve the operator to its corresponding function
+    operator_func = OPERATORS.get(operator)
+    if operator_func is None:
+        raise ValueError(f"Unknown operator: {operator}")
+
     pv_value = caget(pv_name)
     if pv_value is None:
         # Couldn't retrieve the PV
         return "Error", None, f"{operator} {expected_value}"
 
     try:
-        if operator == "==":
-            condition_met = pv_value == expected_value
-        elif operator == "!=":
-            condition_met = pv_value != expected_value
-        elif operator == "<":
-            condition_met = pv_value < expected_value
-        elif operator == "<=":
-            condition_met = pv_value <= expected_value
-        elif operator == ">":
-            condition_met = pv_value > expected_value
-        elif operator == ">=":
-            condition_met = pv_value >= expected_value
-        else:
-            raise ValueError(f"Unknown operator: {operator}")
-
-        if condition_met:
-            result = f"{GREEN}Pass{RESET}"
-        else:
-            result = f"{RED}Fail{RESET}"
+        # Compare using the resolved operator function
+        condition_met = operator_func(pv_value, expected_value)
+        result = f"{GREEN}Pass{RESET}" if condition_met else f"{RED}Fail{RESET}"
         return result, pv_value, f"{operator} {expected_value}"
 
     except Exception as e:
